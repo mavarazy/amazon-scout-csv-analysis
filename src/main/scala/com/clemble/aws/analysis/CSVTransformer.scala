@@ -28,13 +28,9 @@ object AWSScoutTransformer extends CSVTransformer {
           val allValues = csv.
             map(line => line(key)).
             filterNot(_.trim.isEmpty).
-            map(num => {
-              println(s"Converting ${num}")
-              BigDecimal(num)
-            })
+            map(BigDecimal(_))
           key -> median(allValues).toString()
         case Failure(_) =>
-          println(s"$key with $value is a string")
           key -> value
       }
     }
