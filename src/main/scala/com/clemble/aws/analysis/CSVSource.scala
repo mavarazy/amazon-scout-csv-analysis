@@ -1,10 +1,8 @@
 package com.clemble.aws.analysis
 
-import java.io.{File, FileInputStream}
+import java.io.{File}
 
-import com.sun.net.httpserver.Authenticator.Success
-
-import scala.util.{Failure, Try}
+import scala.io.Source
 
 trait CSVSource {
 
@@ -26,7 +24,7 @@ case class FileDirCSVSource(sourceDir: File, reader: CSVReader) extends CSVSourc
     val csvFilesStream = Stream(csvFiles:_*)
     csvFilesStream.map(file => {
       println(s"Processing ${file}")
-      new FileInputStream(file)
+      Source.fromFile(file)
     }).map(reader.read)
   }
 

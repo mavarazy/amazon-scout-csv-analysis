@@ -24,17 +24,26 @@ object AWSScoutTransformer extends CSVTransformer {
     } yield {
       Try(BigDecimal(value)) match {
         case Success(_) =>
-          println(s"$key with $value is a number")
           val allValues = csv.
             map(line => line(key)).
             filterNot(_.trim.isEmpty).
-            map(BigDecimal(_))
+            map(numStr => {
+              Try(BigDecimal(numStr)) match {
+                case Success(num) => Some(num)
+                case Failure(t) =>
+                  println(s"Failed to read ${key} with ${numStr}")
+                  None
+              }
+            }).
+            flatten
           key -> median(allValues).toString()
         case Failure(_) =>
           key -> value
       }
     }
   }
+
+  // Available From	Net	Seller	#	Est. Sales	ASIN	Brand
 
 
   override def transform(csv: CSV): CSV = {
