@@ -2,6 +2,7 @@ package com.clemble.aws
 
 package object analysis {
 
-  type CSV = List[List[String]]
+  type CSVLine = Map[String, String]
+  type CSV = List[CSVLine]
 
 }

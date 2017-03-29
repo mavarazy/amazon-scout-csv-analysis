@@ -1,7 +1,6 @@
 package com.clemble.aws.analysis
 
 import java.io._
-import java.util
 import java.util.stream.Collectors
 
 import scala.collection.JavaConverters._
@@ -14,12 +13,21 @@ trait CSVReader {
 
 object SimpleCSVReader extends CSVReader {
 
+  private def toCSV(lines: List[List[String]]): CSV = {
+    lines match {
+      case head :: csv => csv.map(head.zip(_).toMap)
+      case Nil => Nil
+    }
+  }
+
   override def read(is: InputStream): CSV = {
     val reader = new BufferedReader(new InputStreamReader(is))
-    val csvLines = reader.lines().map[Array[String]]((line) => line.split(","))
-    val csv: util.List[Array[String]] = csvLines.collect(Collectors.toList[Array[String]])
+    val csv = reader.lines().
+      map[List[String]]((line) => line.split(",", 1).toList).
+      collect(Collectors.toList[List[String]])
+    val lines = csv.asScala.toList
     reader.close()
-    csv.asScala.map(_.toList).toList
+    toCSV(lines)
   }
 
 }
