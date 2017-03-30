@@ -1,8 +1,7 @@
 package com.clemble.aws.analysis
 
-import javax.management.Query
-
-import scala.util.{Failure, Success, Try}
+import scala.collection.mutable
+import scala.util.Try
 
 trait CSVTransformer {
 
@@ -12,7 +11,7 @@ trait CSVTransformer {
 
 object AWSScoutTransformer extends CSVTransformer {
 
-  implicit class StringToBigDecimal(str: String) {
+  private implicit class StringToBigDecimal(str: String) {
     def asBigDecimal = Try(BigDecimal(str)).toOption
   }
 
@@ -24,7 +23,7 @@ object AWSScoutTransformer extends CSVTransformer {
       upper.head
   }
 
-  val NON_RELEVANT = List("Available From", "Seller", "#", "ASIN", "Brand", "URL")
+  private val NON_RELEVANT = List("Available From", "Seller", "#", "ASIN", "Brand", "URL", "Min Price")
 
   private def dropNonRelevant(csv: CSV): CSV = {
     csv.map(line => line.filterKeys(!NON_RELEVANT.contains(_)))
@@ -67,15 +66,45 @@ object AWSScoutTransformer extends CSVTransformer {
       trim
   }
 
+  private val DESIRED_ORDER = List(
+    "name",
+    "Category",
+    "#",
+    "Price",
+    "Est. Revenue",
+    "Reviews < 50",
+    "LQS",
+    "Score",
+    "# of Reviews",
+    "Weight",
+    "FBA Fees",
+    "Est. Sales",
+    "Rating",
+    "Rank",
+    "Sellers",
+    "Net",
+    "RPR"
+  )
+
+  private def orderColumns(csv: CSV): CSV = {
+    csv.
+      map(line => {
+        val ordered = new mutable.LinkedHashMap[String, String]
+        DESIRED_ORDER.foreach(key => ordered.put(key, line.get(key).getOrElse("0")))
+        ordered
+      })
+  }
+
   override def transform(res: AWSResults): CSV = {
     if (res.csv.isEmpty || res.csv.size < 15)
       println("Error, csv is insufficient")
     val normQuery = normalizeQuery(res.query)
 
-    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString)
-    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString)
+    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString) + ("score" -> "0")
+    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("score" -> "0")
 
-    List(top10, top15)
+    val csv = List(top10, top15)
+    orderColumns(csv)
   }
 
 }
