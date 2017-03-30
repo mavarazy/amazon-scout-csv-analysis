@@ -1,10 +1,7 @@
 package com.clemble.aws.analysis
 
-import java.io.{ByteArrayOutputStream, File, FileOutputStream, FileWriter}
-import java.nio.file.Files
-
+import java.io.{File, FileOutputStream, FileWriter}
 import org.apache.poi.ss.usermodel.{Cell, Row, Sheet, WorkbookFactory}
-
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 trait CSVWriter {

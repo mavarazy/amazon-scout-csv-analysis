@@ -1,6 +1,9 @@
 package com.clemble.aws.analysis
 
-import java.io.{File}
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.attribute.BasicFileAttributes
+import java.util.Date
 
 import scala.io.Source
 
@@ -31,7 +34,9 @@ case class FileDirCSVSource(sourceDir: File, reader: CSVReader) extends CSVSourc
     } yield{
       val csv = reader.read(Source.fromFile(file))
       val q = toQuery(file)
-      AWSResults(q, csv)
+      val creationTime = Files.readAttributes(file.toPath, classOf[BasicFileAttributes]).creationTime()
+      println(s"Created ${creationTime}")
+      AWSResults(q, csv, new Date(creationTime.toMillis))
     }
   }
 

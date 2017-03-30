@@ -5,7 +5,11 @@ version := "1.0"
 scalaVersion := "2.12.1"
 
 libraryDependencies ++= Seq(
-  "info.folone" %% "poi-scala" % "0.18",
+  "org.slf4j" % "slf4j-api" % "1.7.25",
+  "ch.qos.logback" % "logback-core" % "1.2.2",
+
+  "org.apache.poi" % "poi" % "3.15",
+
   "junit" % "junit" % "4.12" % "test",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.specs2" %% "specs2-core" % "3.8.9" % "test"

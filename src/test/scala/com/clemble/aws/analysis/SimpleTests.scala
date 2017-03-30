@@ -1,5 +1,7 @@
 package com.clemble.aws.analysis
 
+import java.util.Date
+
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
 import org.specs2.mutable.Specification
@@ -29,8 +31,11 @@ class SimpleTests extends Specification {
     val csv = csvReader.read(source)
 
     "return 2 lines" in {
-      val transformed = transformer.transform(AWSResults("query", csv))
+      val transformed = transformer.transform(AWSResults("query", csv, new Date()))
       transformed.size shouldEqual 2
+      transformed.forall(line => line.get("Created").isDefined) shouldEqual true
+      transformed.forall(line => line.get("#").isDefined) shouldEqual true
+      transformed.forall(line => line.get("Reviews < 50").isDefined) shouldEqual true
     }
 
   }

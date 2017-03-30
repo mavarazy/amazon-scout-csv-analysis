@@ -8,7 +8,7 @@ trait CSVReader {
 
 }
 
-object SimpleCSVReader extends CSVReader {
+object SimpleCSVReader extends CSVReader with Loggable {
 
   val headerNormalizer = Map[String, String](
     "№" -> "#",

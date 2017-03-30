@@ -1,5 +1,7 @@
 package com.clemble.aws.analysis
 
+import java.text.SimpleDateFormat
+
 import scala.collection.mutable
 
 trait CSVTransformer {
@@ -54,6 +56,7 @@ object AWSScoutTransformer extends CSVTransformer {
   }
 
   private val DESIRED_ORDER = List(
+    "Created",
     "name",//
     "Category",//
     "#",//
@@ -78,8 +81,9 @@ object AWSScoutTransformer extends CSVTransformer {
       println("Error, csv is insufficient")
     val normQuery = normalizeQuery(res.query)
 
-    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString)
-    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString)
+    val dateFormat = new SimpleDateFormat("dd/M/yyyy")
+    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString) + ("Created" -> dateFormat.format(res.created))
+    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("Created" -> dateFormat.format(res.created))
 
     val csv = List(top10, top15)
     CSVUtils.order(csv, DESIRED_ORDER)

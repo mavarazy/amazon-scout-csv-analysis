@@ -1,10 +1,12 @@
 package com.clemble.aws
 
+import java.util.Date
+
 import scala.util.Try
 
 package object analysis {
 
-  case class AWSResults(query: String, csv: CSV)
+  case class AWSResults(query: String, csv: CSV, created: Date)
 
   type CSVLine = scala.collection.Map[String, String]
   type CSV = List[CSVLine]
