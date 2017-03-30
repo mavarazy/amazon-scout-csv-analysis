@@ -47,7 +47,7 @@ case class ExcelCSVWriter(file: File) extends CSVWriter {
           cell.setCellValue(num.toDouble)
         case None =>
           val cell = row.createCell(pos, Cell.CELL_TYPE_STRING)
-          cell.setCellValue(value)
+          cell.setCellValue(value.replaceAll("\"", ""))
       }
     }
   }

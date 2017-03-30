@@ -54,32 +54,24 @@ object AWSScoutTransformer extends CSVTransformer {
   }
 
   private val DESIRED_ORDER = List(
-    "name",
-    "Category",
-    "#",
-    "Price",
-    "Est. Revenue",
-    "Reviews < 50",
-    "LQS",
-    "# of Reviews",
-    "Weight",
-    "FBA Fees",
+    "name",//
+    "Category",//
+    "#",//
+    "Price",//
+    "Est. Revenue",//
+    "Reviews < 50",//
+    "LQS",//
+    "# of Reviews",//
+    "Weight",//
+    "FBA Fees",//
     "Est. Sales",
-    "Rating",
-    "Rank",
+    "Rating",//
+    "Rank",//
     "Sellers",
     "Net",
     "RPR"
   )
 
-  private def orderColumns(csv: CSV): CSV = {
-    csv.
-      map(line => {
-        val ordered = new mutable.LinkedHashMap[String, String]
-        DESIRED_ORDER.foreach(key => ordered.put(key, line.get(key).getOrElse("0")))
-        ordered
-      })
-  }
 
   override def transform(res: AWSResults): CSV = {
     if (res.csv.isEmpty || res.csv.size < 15)
@@ -90,7 +82,7 @@ object AWSScoutTransformer extends CSVTransformer {
     val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString)
 
     val csv = List(top10, top15)
-    orderColumns(csv)
+    CSVUtils.order(csv, DESIRED_ORDER)
   }
 
 }
