@@ -1,14 +1,20 @@
 package com.clemble.aws.analysis
 
+import javax.management.Query
+
 import scala.util.{Failure, Success, Try}
 
 trait CSVTransformer {
 
-  def transform(csv: CSV): CSV
+  def transform(csv: AWSResults): CSV
 
 }
 
 object AWSScoutTransformer extends CSVTransformer {
+
+  implicit class StringToBigDecimal(str: String) {
+    def asBigDecimal = Try(BigDecimal(str)).toOption
+  }
 
   private def median(numbers: Seq[BigDecimal]): BigDecimal = {
     val (lower, upper) = numbers.sorted.splitAt(numbers.size / 2)
@@ -18,40 +24,56 @@ object AWSScoutTransformer extends CSVTransformer {
       upper.head
   }
 
-  private def analyze(csv: CSV): CSVLine = {
+  val NON_RELEVANT = List("Available From", "Seller", "#", "ASIN", "Brand", "URL")
+
+  private def dropNonRelevant(csv: CSV): CSV = {
+    csv.map(line => line.filterKeys(!NON_RELEVANT.contains(_)))
+  }
+
+  private def reviewsLessThen50(csv: CSV): Int = {
+    csv.map(_.get("# of Reviews").flatMap(_.asBigDecimal)).flatten.filter(_ <= 50).size
+  }
+
+  private def countMedians(csv: CSV): CSVLine = {
     for {
       (key, value) <- csv.head
     } yield {
-      Try(BigDecimal(value)) match {
-        case Success(_) =>
+      value.asBigDecimal match {
+        case Some(_) =>
           val allValues = csv.
             map(line => line(key)).
             filterNot(_.trim.isEmpty).
-            map(numStr => {
-              Try(BigDecimal(numStr)) match {
-                case Success(num) => Some(num)
-                case Failure(t) =>
-                  println(s"Failed to read ${key} with ${numStr}")
-                  None
-              }
-            }).
+            map(_.asBigDecimal).
             flatten
           key -> median(allValues).toString()
-        case Failure(_) =>
+        case None =>
           key -> value
       }
     }
   }
 
-  // Available From	Net	Seller	#	Est. Sales	ASIN	Brand
+  private def analyzeCSV(csv: CSV): CSVLine = {
+    val relevant = dropNonRelevant(csv)
+    val line = countMedians(relevant)
+    val reviews = reviewsLessThen50(relevant)
+    line + ("Reviews < 50" -> reviews.toString)
+  }
 
+  private def normalizeQuery(q: String): String = {
+    q.
+      replaceAll("Search Term of", "").
+      replaceAll("at\\s*[0-9|-]*", "").
+      replaceAll("\\.csv", "").
+      trim
+  }
 
-  override def transform(csv: CSV): CSV = {
-    if (csv.isEmpty || csv.size < 15)
+  override def transform(res: AWSResults): CSV = {
+    if (res.csv.isEmpty || res.csv.size < 15)
       println("Error, csv is insufficient")
+    val normQuery = normalizeQuery(res.query)
 
-    val top10 = analyze(csv.take(10))
-    val top15 = analyze(csv.take(15))
+    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString)
+    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString)
 
     List(top10, top15)
   }

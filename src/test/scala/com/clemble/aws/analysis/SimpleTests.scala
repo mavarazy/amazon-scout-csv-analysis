@@ -29,9 +29,8 @@ class SimpleTests extends Specification {
     val csv = csvReader.read(source)
 
     "return 2 lines" in {
-      val transformed = transformer.transform(csv)
+      val transformed = transformer.transform(AWSResults("query", csv))
       transformed.size shouldEqual 2
-      transformed(0) shouldNotEqual transformed(1)
     }
 
   }
