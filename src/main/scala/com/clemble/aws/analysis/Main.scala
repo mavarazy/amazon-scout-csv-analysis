@@ -16,7 +16,13 @@ object Main extends App {
   val source: CSVSource = new FileDirCSVSource(sourceDir, reader)
 
   val transformer: CSVTransformer = AWSScoutTransformer
-  val writer: CSVWriter = new FileCSVWriter(new File(sourceDir.getParentFile(), "analysis.csv"))
+  val writer: CSVWriter = {
+    val excelFile = new File(sourceDir.getParentFile(), "analysis.xlsx")
+    if (excelFile.exists())
+      new ExcelCSVWriter(excelFile)
+    else
+      new FileCSVWriter(new File(sourceDir.getParentFile(), "analysis.csv"))
+  }
 
   val transformedStream = source.readResults().map(transformer.transform)
 

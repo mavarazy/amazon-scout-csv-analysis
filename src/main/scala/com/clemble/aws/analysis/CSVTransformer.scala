@@ -74,7 +74,6 @@ object AWSScoutTransformer extends CSVTransformer {
     "Est. Revenue",
     "Reviews < 50",
     "LQS",
-    "Score",
     "# of Reviews",
     "Weight",
     "FBA Fees",
@@ -100,8 +99,8 @@ object AWSScoutTransformer extends CSVTransformer {
       println("Error, csv is insufficient")
     val normQuery = normalizeQuery(res.query)
 
-    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString) + ("score" -> "0")
-    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("score" -> "0")
+    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString)
+    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString)
 
     val csv = List(top10, top15)
     orderColumns(csv)

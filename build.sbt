@@ -5,6 +5,7 @@ version := "1.0"
 scalaVersion := "2.12.1"
 
 libraryDependencies ++= Seq(
+  "info.folone" %% "poi-scala" % "0.18",
   "junit" % "junit" % "4.12" % "test",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.specs2" %% "specs2-core" % "3.8.9" % "test"
