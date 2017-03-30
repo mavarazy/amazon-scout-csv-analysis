@@ -1,8 +1,9 @@
 package com.clemble.aws.analysis
 
-import java.io.{File, FileWriter}
+import java.io.{ByteArrayOutputStream, File, FileOutputStream, FileWriter}
+import java.nio.file.Files
 
-import org.apache.poi.ss.usermodel.{Cell, Sheet, WorkbookFactory}
+import org.apache.poi.ss.usermodel.{Cell, Row, Sheet, WorkbookFactory}
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -36,28 +37,44 @@ case class ExcelCSVWriter(file: File) extends CSVWriter {
     header.map(_.getStringCellValue()).zipWithIndex.toMap
   }
 
-  def writeSheet(sheet: Sheet, csvLines: Stream[CSVLine]): Unit = {
-    val relevantCells = headerToOrder(sheet.getRow(sheet.getFirstRowNum()).cellIterator().asScala)
+  def writeRow(row: Row, line: Iterable[(Int, String)]) = {
     for {
-      (line, id) <- csvLines.zipWithIndex
+      (pos, value) <- line
     } {
-      val row = sheet.getRow(id + 2)
-      val relLineValues = line.
-        map({ case (key, value) => relevantCells.get(key).map(pos => (pos, value)) }).
-        flatten
-      for {
-        (pos, value) <- relLineValues
-      } {
-        val cell = row.createCell(pos)
-        cell.setCellValue(value)
+      value.asBigDecimal match {
+        case Some(num) =>
+          val cell = row.createCell(pos, Cell.CELL_TYPE_NUMERIC)
+          cell.setCellValue(num.toDouble)
+        case None =>
+          val cell = row.createCell(pos, Cell.CELL_TYPE_STRING)
+          cell.setCellValue(value)
       }
     }
   }
 
+  def writeSheet(sheet: Sheet, csvLines: Stream[CSVLine]): Unit = {
+    val relevantCells = headerToOrder(sheet.getRow(0).cellIterator().asScala)
+    for {
+      (line, id) <- csvLines.zipWithIndex
+    } {
+      val relLineValues = line.
+        map({ case (key, value) => relevantCells.get(key).map(pos => (pos, value)) }).
+        flatten
+      writeRow(sheet.getRow(id + 1), relLineValues)
+    }
+  }
+
+  def saveWorkbook(): Unit = {
+    val fos = new FileOutputStream(new File(file.getParent, "gen-" + file.getName()))
+    workbook.write(fos)
+    fos.close()
+  }
+
   override def write(csvStream: Stream[CSV]): Unit = {
-    val sheet = workbook.getSheetAt(1)
+    val sheet = workbook.getSheetAt(0)
     val lines = csvStream.flatMap(csv => Stream(csv :_*))
     writeSheet(sheet, lines)
+    saveWorkbook()
     workbook.close()
   }
 

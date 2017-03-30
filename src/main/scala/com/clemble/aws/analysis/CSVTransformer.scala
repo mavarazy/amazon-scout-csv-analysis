@@ -1,7 +1,6 @@
 package com.clemble.aws.analysis
 
 import scala.collection.mutable
-import scala.util.Try
 
 trait CSVTransformer {
 
@@ -10,18 +9,6 @@ trait CSVTransformer {
 }
 
 object AWSScoutTransformer extends CSVTransformer {
-
-  private implicit class StringToBigDecimal(str: String) {
-    def asBigDecimal = Try(BigDecimal(str)).toOption
-  }
-
-  private def median(numbers: Seq[BigDecimal]): BigDecimal = {
-    val (lower, upper) = numbers.sorted.splitAt(numbers.size / 2)
-    if (numbers.size % 2 == 0)
-      (lower.last + upper.head) / 2
-    else
-      upper.head
-  }
 
   private val NON_RELEVANT = List("Available From", "Seller", "#", "ASIN", "Brand", "URL", "Min Price")
 
@@ -44,7 +31,7 @@ object AWSScoutTransformer extends CSVTransformer {
             filterNot(_.trim.isEmpty).
             map(_.asBigDecimal).
             flatten
-          key -> median(allValues).toString()
+          key -> allValues.median().toString()
         case None =>
           key -> value
       }
