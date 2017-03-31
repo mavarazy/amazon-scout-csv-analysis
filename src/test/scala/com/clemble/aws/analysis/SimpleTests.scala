@@ -38,6 +38,11 @@ class SimpleTests extends Specification {
       transformed.forall(line => line.get("Reviews < 50").isDefined) shouldEqual true
     }
 
+    "clean name" in {
+      val name = "Search Term of Weather Shield  Stroller at 3-30-2017.csv"
+      AWSScoutTransformer.normalizeQuery(name) shouldEqual "Weather Shield  Stroller"
+    }
+
   }
 
 }

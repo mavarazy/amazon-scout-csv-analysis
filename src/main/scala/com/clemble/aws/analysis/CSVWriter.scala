@@ -1,7 +1,9 @@
 package com.clemble.aws.analysis
 
 import java.io.{File, FileOutputStream, FileWriter}
-import org.apache.poi.ss.usermodel.{Cell, Row, Sheet, WorkbookFactory}
+
+import org.apache.poi.ss.usermodel._
+
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 trait CSVWriter {
@@ -28,41 +30,40 @@ case class FileCSVWriter(file: File) extends CSVWriter {
 }
 
 case class ExcelCSVWriter(file: File) extends CSVWriter {
-  val workbook = WorkbookFactory.create(file)
+  private val workbook = WorkbookFactory.create(file)
 
-  def headerToOrder(header: Iterator[Cell]): Map[String, Int] = {
+  private def headerToOrder(header: Iterator[Cell]): Map[String, Int] = {
     header.map(_.getStringCellValue()).zipWithIndex.toMap
   }
 
-  def writeRow(row: Row, line: Iterable[(Int, String)]) = {
+  private def writeRow(row: Row, line: Iterable[(Int, String)]) = {
     for {
       (pos, value) <- line
     } {
       value.asBigDecimal match {
         case Some(num) =>
-          val cell = row.createCell(pos, Cell.CELL_TYPE_NUMERIC)
+          val cell = row.createCell(pos, CellType.NUMERIC)
           cell.setCellValue(num.toDouble)
         case None =>
-          val cell = row.createCell(pos, Cell.CELL_TYPE_STRING)
+          val cell = row.createCell(pos, CellType.STRING)
           cell.setCellValue(value.replaceAll("\"", ""))
       }
     }
   }
 
-  def writeSheet(sheet: Sheet, csvLines: Stream[CSVLine]): Unit = {
+  private def writeSheet(sheet: Sheet, csvLines: Stream[CSVLine]): Unit = {
     val relevantCells = headerToOrder(sheet.getRow(0).cellIterator().asScala)
     for {
       (line, id) <- csvLines.zipWithIndex
     } {
       val relLineValues = line.
-        map({ case (key, value) => relevantCells.get(key).map(pos => (pos, value)) }).
-        flatten
+        flatMap({ case (key, value) => relevantCells.get(key).map(pos => (pos, value)) })
       writeRow(sheet.getRow(id + 1), relLineValues)
     }
   }
 
-  def saveWorkbook(): Unit = {
-    val fos = new FileOutputStream(new File(file.getParent, "gen-" + file.getName()))
+  private def saveWorkbook(): Unit = {
+    val fos = new FileOutputStream(new File(file.getParent, s"gen-${file.getName}"))
     workbook.write(fos)
     fos.close()
   }

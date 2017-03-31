@@ -5,7 +5,7 @@ import java.nio.file.Files
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.Date
 
-import scala.io.Source
+import scala.io.{Codec, Source}
 
 trait CSVSource {
 
@@ -13,7 +13,7 @@ trait CSVSource {
 
 }
 
-case class FileDirCSVSource(sourceDir: File, reader: CSVReader) extends CSVSource {
+case class FileDirCSVSource(sourceDir: File, reader: CSVReader) extends CSVSource with Loggable {
 
   private def toQuery(source: File): String = {
     source.getName()
@@ -27,15 +27,15 @@ case class FileDirCSVSource(sourceDir: File, reader: CSVReader) extends CSVSourc
 
   override def readResults(): Stream[AWSResults] = {
     val queryFiles = listQueries(sourceDir)
-    println(s"Found ${queryFiles.length} files")
+    LOG.info(s"Found ${queryFiles.length} files")
     val csvFilesStream = Stream(queryFiles:_*)
     for {
       file <- csvFilesStream
     } yield{
-      val csv = reader.read(Source.fromFile(file))
+      val csv = reader.read(Source.fromFile(file)(Codec.UTF8))
       val q = toQuery(file)
       val creationTime = Files.readAttributes(file.toPath, classOf[BasicFileAttributes]).creationTime()
-      println(s"Created ${creationTime}")
+      LOG.debug(s"Query $q; time $creationTime;")
       AWSResults(q, csv, new Date(creationTime.toMillis))
     }
   }

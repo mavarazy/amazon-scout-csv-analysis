@@ -1,8 +1,9 @@
 package com.clemble.aws.analysis
 
 import java.text.SimpleDateFormat
+import java.util.Date
 
-import scala.collection.mutable
+import scala.util.Try
 
 trait CSVTransformer {
 
@@ -10,7 +11,7 @@ trait CSVTransformer {
 
 }
 
-object AWSScoutTransformer extends CSVTransformer {
+object AWSScoutTransformer extends CSVTransformer with Loggable {
 
   private val NON_RELEVANT = List("Available From", "Seller", "#", "ASIN", "Brand", "URL", "Min Price")
 
@@ -19,22 +20,22 @@ object AWSScoutTransformer extends CSVTransformer {
   }
 
   private def reviewsLessThen50(csv: CSV): Int = {
-    csv.map(_.get("# of Reviews").flatMap(_.asBigDecimal)).flatten.filter(_ <= 50).size
+    csv.flatMap(_.get("# of Reviews").flatMap(_.asBigDecimal)).count(_ <= 50)
   }
 
-  private def countMedians(csv: CSV): CSVLine = {
+  private def analyzeMedians(csv: CSV): CSVLine = {
     for {
       (key, value) <- csv.head
     } yield {
       value.asBigDecimal match {
         case Some(_) =>
           val allValues = csv.
-            map(line => line(key)).
+            flatMap(line => line.get(key)).
             filterNot(_.trim.isEmpty).
-            map(_.asBigDecimal).
-            flatten
+            flatMap(_.asBigDecimal)
           key -> allValues.median().toString()
         case None =>
+          LOG.debug(s"Read $key $value as String")
           key -> value
       }
     }
@@ -42,51 +43,40 @@ object AWSScoutTransformer extends CSVTransformer {
 
   private def analyzeCSV(csv: CSV): CSVLine = {
     val relevant = dropNonRelevant(csv)
-    val line = countMedians(relevant)
+    val line = analyzeMedians(relevant)
     val reviews = reviewsLessThen50(relevant)
     line + ("Reviews < 50" -> reviews.toString)
   }
 
-  private def normalizeQuery(q: String): String = {
+  def normalizeQuery(q: String): String = {
     q.
       replaceAll("Search Term of", "").
-      replaceAll("at\\s*[0-9|-]*", "").
+      replaceAll("\\sat\\s*[0-9|-]*", "").
       replaceAll("\\.csv", "").
       trim
   }
 
-  private val DESIRED_ORDER = List(
-    "Created",
-    "name",//
-    "Category",//
-    "#",//
-    "Price",//
-    "Est. Revenue",//
-    "Reviews < 50",//
-    "LQS",//
-    "# of Reviews",//
-    "Weight",//
-    "FBA Fees",//
-    "Est. Sales",
-    "Rating",//
-    "Rank",//
-    "Sellers",
-    "Net",
-    "RPR"
-  )
-
+  private def parseDate(res: AWSResults): Date = {
+    val createdDate = res.query.replaceAll(".*at\\s*|\\.csv", "").trim
+    Try({
+      new SimpleDateFormat("M-dd-yyyy").parse(createdDate)
+    }).toOption.
+      getOrElse(res.created)
+  }
 
   override def transform(res: AWSResults): CSV = {
     if (res.csv.isEmpty || res.csv.size < 15)
-      println("Error, csv is insufficient")
+      LOG.error("Error, csv is insufficient")
     val normQuery = normalizeQuery(res.query)
+    val createdDate = parseDate(res)
+    LOG.debug(s"Query after normalization $normQuery")
 
     val dateFormat = new SimpleDateFormat("dd/M/yyyy")
-    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString) + ("Created" -> dateFormat.format(res.created))
-    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("Created" -> dateFormat.format(res.created))
+    val top10 = analyzeCSV(res.csv.take(10)) + ("name" -> normQuery) + ("#" -> 10.toString) + ("Created" -> dateFormat.format(createdDate))
+    val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("Created" -> dateFormat.format(createdDate))
 
     val csv = List(top10, top15)
-    CSVUtils.order(csv, DESIRED_ORDER)
+    csv
   }
 
 }
