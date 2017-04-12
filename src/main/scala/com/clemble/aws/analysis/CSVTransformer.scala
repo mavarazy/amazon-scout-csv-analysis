@@ -7,25 +7,28 @@ import scala.util.Try
 
 trait CSVTransformer {
 
-  def transform(csv: AWSResults): AWSResults
+  def transform(res: AWSResults): AWSResults
 
   def andThen(transformer: CSVTransformer): CSVTransformer = {
     transformer match {
-      case AndThenTransformer(_) => transformer.andThen(this)
+      case AndThenTransformer(transformers) => AndThenTransformer(this :: transformers)
       case _ => AndThenTransformer(List(this, transformer))
     }
   }
 
 }
 
-private case class AndThenTransformer(transformers: Seq[CSVTransformer]) extends CSVTransformer {
+private case class AndThenTransformer(transformers: List[CSVTransformer]) extends CSVTransformer {
 
   override def transform(csv: AWSResults): AWSResults = {
     transformers.foldLeft(csv)((csv, transformer) => transformer.transform(csv))
   }
 
   override def andThen(transformer: CSVTransformer): CSVTransformer = {
-    AndThenTransformer(transformers :+ transformer)
+    transformer match {
+      case AndThenTransformer(others) => AndThenTransformer(transformers ++ others)
+      case _ => AndThenTransformer(transformers :+ transformer)
+    }
   }
 
 }
