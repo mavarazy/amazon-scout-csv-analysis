@@ -8,19 +8,19 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 
 trait CSVWriter {
 
-  def write(csv: Stream[CSV]): Unit
+  def write(csv: Stream[AWSResults]): Unit
 
 }
 
 case class FileCSVWriter(file: File) extends CSVWriter {
 
-  override def write(csv: Stream[CSV]): Unit = {
+  override def write(resStream: Stream[AWSResults]): Unit = {
     val fos = new FileWriter(file)
-    val header = csv.headOption.flatMap(_.headOption).map(_.keys.mkString(",")).getOrElse("")
+    val header = resStream.headOption.flatMap(_.csv.headOption).map(_.keys.mkString(",")).getOrElse("")
     fos.write(header)
     fos.write("\n")
-    csv.foreach(csv => {
-      val text = csv.map(line => line.values.mkString(",")).mkString("\n")
+    resStream.foreach(res => {
+      val text = res.csv.map(line => line.values.mkString(",")).mkString("\n")
       fos.write(text)
       fos.write("\n")
     })
@@ -68,9 +68,9 @@ case class ExcelCSVWriter(file: File) extends CSVWriter {
     fos.close()
   }
 
-  override def write(csvStream: Stream[CSV]): Unit = {
+  override def write(resStream: Stream[AWSResults]): Unit = {
     val sheet = workbook.getSheetAt(0)
-    val lines = csvStream.flatMap(csv => Stream(csv :_*))
+    val lines = resStream.flatMap(res => Stream(res.csv :_*))
     writeSheet(sheet, lines)
     saveWorkbook()
     workbook.close()

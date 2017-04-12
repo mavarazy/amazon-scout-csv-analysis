@@ -7,7 +7,26 @@ import scala.util.Try
 
 trait CSVTransformer {
 
-  def transform(csv: AWSResults): CSV
+  def transform(csv: AWSResults): AWSResults
+
+  def andThen(transformer: CSVTransformer): CSVTransformer = {
+    transformer match {
+      case AndThenTransformer(_) => transformer.andThen(this)
+      case _ => AndThenTransformer(List(this, transformer))
+    }
+  }
+
+}
+
+private case class AndThenTransformer(transformers: Seq[CSVTransformer]) extends CSVTransformer {
+
+  override def transform(csv: AWSResults): AWSResults = {
+    transformers.foldLeft(csv)((csv, transformer) => transformer.transform(csv))
+  }
+
+  override def andThen(transformer: CSVTransformer): CSVTransformer = {
+    AndThenTransformer(transformers :+ transformer)
+  }
 
 }
 
@@ -64,7 +83,7 @@ object AWSScoutTransformer extends CSVTransformer with Loggable {
       getOrElse(res.created)
   }
 
-  override def transform(res: AWSResults): CSV = {
+  override def transform(res: AWSResults): AWSResults = {
     if (res.csv.isEmpty || res.csv.size < 15)
       LOG.error("Error, csv is insufficient")
     val normQuery = normalizeQuery(res.query)
@@ -76,7 +95,7 @@ object AWSScoutTransformer extends CSVTransformer with Loggable {
     val top15 = analyzeCSV(res.csv.take(15)) + ("name" -> normQuery) + ("#" -> 15.toString) + ("Created" -> dateFormat.format(createdDate))
 
     val csv = List(top10, top15)
-    csv
+    AWSResults(normQuery, csv, res.created)
   }
 
 }
