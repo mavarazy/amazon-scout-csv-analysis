@@ -28,6 +28,25 @@ private case class ListAntiDumpingDatabase(names: Set[String]) extends AntiDumpi
 
 }
 
+private case class WordAntiDumpingDatabase(names: Set[String]) extends AntiDumpingDatabase {
+
+  private val wordToQueries = names.
+    flatMap(name => toWords(name).map(_ -> name)).
+    groupBy(_._1).
+    mapValues(_.map(_._2))
+
+  def toWords(name: String): List[String] = {
+    name.split("\\s").toList.map(_.trim.toLowerCase).filterNot(_.isEmpty)
+  }
+
+  override def isRegulated(query: String): Boolean = {
+    val queryWords = toWords(query)
+    val possible = queryWords.flatMap(wordToQueries.getOrElse(_, Set.empty[String]))
+    !possible.isEmpty
+  }
+
+}
+
 object AntiDumpingDatabase {
 
   private def readNames(file: File): Seq[String] = {
@@ -44,12 +63,12 @@ object AntiDumpingDatabase {
 
   def fromExcel(files: Seq[File]): AntiDumpingDatabase = {
     val allProducts = files.flatMap(readNames).toSet
-    ListAntiDumpingDatabase(allProducts)
+    WordAntiDumpingDatabase(allProducts)
   }
 
   def fromExcel(file: File): AntiDumpingDatabase = {
     val products = readNames(file)
-    ListAntiDumpingDatabase(products.toSet)
+    WordAntiDumpingDatabase(products.toSet)
   }
 
 }
