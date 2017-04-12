@@ -16,13 +16,19 @@ object Main extends App with Loggable {
   val source: CSVSource = new FileDirCSVSource(sourceDir, reader)
 
   val transformer: CSVTransformer = {
-    val antiDumpingFiles = sourceDir.getParentFile.listFiles((file) => file.getName.contains("GAD") && file.getName.endsWith(".xls")).toSeq
+    val antiDumpingFiles = sourceDir.getParentFile.listFiles((file) => {
+      val fileName = file.getName
+      val isExcel = fileName.endsWith(".xls")
+      val isAntiDumpingRelated = fileName.contains("GAD-")
+      LOG.debug(s"Checking ${fileName} it is an Excel ${isExcel} and ${isAntiDumpingRelated}")
+      isExcel && isAntiDumpingRelated
+    }).toSeq
     if (antiDumpingFiles.isEmpty) {
-      val antiDumpDB = AntiDumpingDatabase.fromExcel(antiDumpingFiles)
-      AWSScoutTransformer andThen AntiDumpingTransformer(antiDumpDB)
-    } else {
       LOG.warn("No antidumping data exists, falling back to just AWSScoutTransformer")
       AWSScoutTransformer
+    } else {
+      val antiDumpDB = AntiDumpingDatabase.fromExcel(antiDumpingFiles)
+      AWSScoutTransformer andThen AntiDumpingTransformer(antiDumpDB)
     }
   }
   val writer: CSVWriter = {
