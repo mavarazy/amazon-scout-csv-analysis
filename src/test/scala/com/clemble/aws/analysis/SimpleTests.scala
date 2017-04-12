@@ -32,10 +32,10 @@ class SimpleTests extends Specification {
 
     "return 2 lines" in {
       val transformed = transformer.transform(AWSResults("query", csv, new Date()))
-      transformed.size shouldEqual 2
-      transformed.forall(line => line.get("Created").isDefined) shouldEqual true
-      transformed.forall(line => line.get("#").isDefined) shouldEqual true
-      transformed.forall(line => line.get("Reviews < 50").isDefined) shouldEqual true
+      transformed.csv.size shouldEqual 2
+      transformed.csv.forall(line => line.get("Created").isDefined) shouldEqual true
+      transformed.csv.forall(line => line.get("#").isDefined) shouldEqual true
+      transformed.csv.forall(line => line.get("Reviews < 50").isDefined) shouldEqual true
     }
 
     "clean name" in {
