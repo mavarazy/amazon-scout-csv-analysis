@@ -78,3 +78,7 @@ project/plugins/project/
 .idea/scala_compiler.xml
 
 .idea/vcs.xml
+
+*.sc
+.idea/
+project/project/

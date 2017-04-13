@@ -10,11 +10,12 @@ class AntiDumpingRegulationsTests extends Specification {
 
   "AntiDumping DB from Excel" should {
     val regs = AntiDumpingDatabase.fromExcel(USA_REG)
-    regs.isRegulated("Melamine in Crystal") shouldEqual true
-    regs.isRegulated("Melamine") shouldEqual true
-    regs.isRegulated("Crystal") shouldEqual true
-    regs.isRegulated("bags") shouldEqual true
-    regs.isRegulated("Kawabanga") shouldEqual false
+    !regs.isRegulated("Melamine in Crystal").isEmpty shouldEqual true
+    !regs.isRegulated("Melamine").isEmpty shouldEqual true
+    !regs.isRegulated("Crystal").isEmpty shouldEqual true
+    !regs.isRegulated("bags").isEmpty shouldEqual true
+    !regs.isRegulated("bag").isEmpty shouldEqual true
+    !regs.isRegulated("Kawabanga").isEmpty shouldEqual false
   }
 
 }

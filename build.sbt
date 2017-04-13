@@ -13,6 +13,8 @@ libraryDependencies ++= Seq(
   "org.apache.poi" % "poi" % "3.15",
   "org.apache.poi" % "poi-ooxml" % "3.15",
 
+  "org.apache.lucene" % "lucene-analyzers-common" % "6.5.0",
+
   "junit" % "junit" % "4.12" % "test",
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   "org.specs2" %% "specs2-core" % "3.8.9" % "test"
